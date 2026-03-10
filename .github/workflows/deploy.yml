@@ -23,8 +23,21 @@ jobs:
           export DEBIAN_FRONTEND=noninteractive
           sudo apt-get update -y || echo "Skip apt update"
           sudo apt-get install -y git curl docker.io || true
+          
+          # 配置 Docker 国内加速镜像源，防止拉取 node 基础镜像被墙阻断
+          sudo mkdir -p /etc/docker
+          sudo tee /etc/docker/daemon.json <<-'EOF'
+          {
+            "registry-mirrors": [
+              "https://docker.m.daocloud.io",
+              "https://docker.nju.edu.cn",
+              "https://mirror.baidubce.com"
+            ]
+          }
+          EOF
+          
           sudo systemctl enable docker || true
-          sudo systemctl start docker || true
+          sudo systemctl restart docker || true
 
           mkdir -p /app/cms-backend
           cd /app/cms-backend
