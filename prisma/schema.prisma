@@ -4,7 +4,6 @@ generator client {
 
 datasource db {
   provider = "sqlite"  // 考虑到快速本地测试，使用 sqlite
-  url      = "file:./dev.db"
 }
 
 /// 管理员用户表
