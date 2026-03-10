@@ -43,9 +43,11 @@ jobs:
           cd /app/cms-backend
           
           if [ -d ".git" ]; then
+            sudo git reset --hard
             sudo git pull origin master || (echo "Git pull failed, trying proxy..." && sudo git pull https://mirror.ghproxy.com/https://github.com/hnhok/new-backend.git master)
           else
-            sudo git clone https://github.com/hnhok/new-backend.git . || sudo git clone https://mirror.ghproxy.com/https://github.com/hnhok/new-backend.git .
+            sudo rm -rf *
+            sudo git clone https://github.com/hnhok/new-backend.git . || (echo "Git clone failed, trying proxy..." && sudo git clone https://mirror.ghproxy.com/https://github.com/hnhok/new-backend.git .)
           fi
           
           sudo docker stop cms-backend || true
