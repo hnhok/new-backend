@@ -1,0 +1,58 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"  // 考虑到快速本地测试，使用 sqlite
+  url      = "file:./dev.db"
+}
+
+/// 管理员用户表
+model User {
+  id        Int      @id @default(autoincrement())
+  email     String   @unique
+  password  String
+  name      String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  posts     Post[]
+}
+
+/// 新闻分类表 (支持树状结构)
+model Category {
+  id        Int        @id @default(autoincrement())
+  name      String
+  
+  // 自引用关系，实现分类树
+  parentId  Int?
+  parent    Category?  @relation("ParentChildren", fields: [parentId], references: [id])
+  children  Category[] @relation("ParentChildren")
+  
+  posts     Post[]
+  
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+}
+
+/// 新闻文章表
+model Post {
+  id         Int       @id @default(autoincrement())
+  title      String
+  content    String    // 支持 Markdown 正文
+  summary    String?   // 摘要
+  coverImage String?   // 封面图片 URL
+  
+  // 核心业务流转：草稿与已发布
+  isDraft    Boolean   @default(true)
+  
+  // 外键关联
+  authorId   Int
+  author     User      @relation(fields: [authorId], references: [id])
+  
+  categoryId Int?
+  category   Category? @relation(fields: [categoryId], references: [id])
+  
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+}
