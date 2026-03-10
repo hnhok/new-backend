@@ -20,24 +20,23 @@ jobs:
         username: ${{ secrets.SERVER_USER }}
         password: ${{ secrets.SERVER_PASSWORD }}
         script: |
-          # 1. 国内服务器专供版基建
           export DEBIAN_FRONTEND=noninteractive
           sudo apt-get update -y || echo "Skip apt update"
-          sudo apt-get install -y git curl docker.io docker-compose-v2 || sudo apt-get install -y git curl docker.io docker-compose
-          
-          # 启动 Docker
+          sudo apt-get install -y git curl docker.io || true
           sudo systemctl enable docker || true
           sudo systemctl start docker || true
-          
+
           mkdir -p /app/cms-backend
           cd /app/cms-backend
           
-          # 2. 拉取或更新源代码
           if [ -d ".git" ]; then
             sudo git pull origin master || (echo "Git pull failed, trying proxy..." && sudo git pull https://mirror.ghproxy.com/https://github.com/hnhok/new-backend.git master)
           else
             sudo git clone https://github.com/hnhok/new-backend.git . || sudo git clone https://mirror.ghproxy.com/https://github.com/hnhok/new-backend.git .
           fi
           
-          # 3. 集联启动容器
-          sudo docker compose up -d --build backend || sudo docker-compose up -d --build backend
+          sudo docker stop cms-backend || true
+          sudo docker rm cms-backend || true
+          sudo docker volume create backend-sqlite-data || true
+          sudo docker build -t cms-backend .
+          sudo docker run -d --name cms-backend -p 3000:3000 -v backend-sqlite-data:/app/prisma -e NODE_ENV=production --restart always cms-backend
