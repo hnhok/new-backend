@@ -13,18 +13,26 @@ jobs:
     - name: Checkout code
       uses: actions/checkout@v3
 
-    - name: Deploy to Server via SSH
+    - name: Copy files via SCP
+      uses: appleboy/scp-action@master
+      with:
+        host: ${{ secrets.SERVER_HOST }}
+        username: ${{ secrets.SERVER_USER }}
+        password: ${{ secrets.SERVER_PASSWORD }}
+        source: "."
+        target: "/app/cms-backend"
+        rm: true # 部署前自动清空目标目录，防止残留
+
+    - name: Build and Run Docker
       uses: appleboy/ssh-action@master
       with:
         host: ${{ secrets.SERVER_HOST }}
         username: ${{ secrets.SERVER_USER }}
         password: ${{ secrets.SERVER_PASSWORD }}
         script: |
-          export DEBIAN_FRONTEND=noninteractive
-          sudo apt-get update -y || echo "Skip apt update"
-          sudo apt-get install -y git curl docker.io || true
+          cd /app/cms-backend
           
-          # 配置 Docker 国内加速镜像源，优先使用百度内部源（因为你的是百度云机器）
+          # 依然保留 Docker 国内镜像源配置，确保拉取 node 镜像飞速
           sudo mkdir -p /etc/docker
           sudo tee /etc/docker/daemon.json <<-'EOF'
           {
@@ -35,22 +43,8 @@ jobs:
             ]
           }
           EOF
-          
-          sudo systemctl enable docker || true
           sudo systemctl restart docker || true
 
-          mkdir -p /app/cms-backend
-          cd /app/cms-backend
-          
-          # ==== 直接参考前端成功的克隆逻辑 ====
-          if [ -d ".git" ]; then
-            sudo git reset --hard || true
-            sudo timeout 30s git pull origin master || (sudo git pull https://hub.fastgit.xyz/hnhok/new-backend.git master) || exit 1
-          else
-            sudo rm -rf * || true
-            sudo timeout 30s git clone https://github.com/hnhok/new-backend.git . || (sudo git clone https://hub.fastgit.xyz/hnhok/new-backend.git .) || exit 1
-          fi
-          
           sudo docker stop cms-backend || true
           sudo docker rm cms-backend || true
           sudo docker volume create backend-sqlite-data || true
