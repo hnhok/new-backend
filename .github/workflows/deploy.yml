@@ -24,16 +24,14 @@ jobs:
           sudo apt-get update -y || echo "Skip apt update"
           sudo apt-get install -y git curl docker.io || true
           
-          # 配置 Docker 国内加速镜像源，增加更多可用节点
+          # 配置 Docker 国内加速镜像源，优先使用百度内部源（因为你的是百度云机器）
           sudo mkdir -p /etc/docker
           sudo tee /etc/docker/daemon.json <<-'EOF'
           {
             "registry-mirrors": [
-              "https://docker.m.daocloud.io",
-              "https://dockerproxy.com",
-              "https://docker.nju.edu.cn",
               "https://mirror.baidubce.com",
-              "https://ccr.ccs.tencentyun.com"
+              "https://docker.m.daocloud.io",
+              "https://dockerproxy.com"
             ]
           }
           EOF
@@ -44,21 +42,13 @@ jobs:
           mkdir -p /app/cms-backend
           cd /app/cms-backend
           
-          # ==== 终极五重保险 Git Pull/Clone ====
+          # ==== 直接参考前端成功的克隆逻辑 ====
           if [ -d ".git" ]; then
             sudo git reset --hard || true
-            sudo timeout 30s git pull origin master || \
-            sudo timeout 30s git pull https://hub.fastgit.xyz/hnhok/new-backend.git master || \
-            sudo timeout 30s git pull https://mirror.ghproxy.com/https://github.com/hnhok/new-backend.git master || \
-            sudo timeout 30s git pull https://gitclone.com/github.com/hnhok/new-backend.git master || \
-            (echo "All pull attempts failed." && exit 1)
+            sudo timeout 30s git pull origin master || (sudo git pull https://hub.fastgit.xyz/hnhok/new-backend.git master) || exit 1
           else
             sudo rm -rf * || true
-            sudo timeout 30s git clone https://github.com/hnhok/new-backend.git . || \
-            sudo timeout 30s git clone https://hub.fastgit.xyz/hnhok/new-backend.git . || \
-            sudo timeout 30s git clone https://mirror.ghproxy.com/https://github.com/hnhok/new-backend.git . || \
-            sudo timeout 30s git clone https://gitclone.com/github.com/hnhok/new-backend.git . || \
-            (echo "All clone attempts failed." && exit 1)
+            sudo timeout 30s git clone https://github.com/hnhok/new-backend.git . || (sudo git clone https://hub.fastgit.xyz/hnhok/new-backend.git .) || exit 1
           fi
           
           sudo docker stop cms-backend || true
