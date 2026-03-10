@@ -3,7 +3,8 @@ generator client {
 }
 
 datasource db {
-  provider = "sqlite"  // 考虑到快速本地测试，使用 sqlite
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
 }
 
 /// 管理员用户表
